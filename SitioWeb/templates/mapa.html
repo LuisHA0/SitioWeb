@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mi Mapa IA - Guadalajara</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        /* Mantenemos tu estilo original de pantalla completa */
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+        
+        #map { 
+            height: 100vh; 
+            width: 100%; 
+            z-index: 1;
+        }
+
+        /* Buscador flotante a la derecha como lo tenías */
+        .search-container {
+            position: absolute; 
+            right: 10px; 
+            top: 10px;      
+            z-index: 1000; 
+            background: white; 
+            padding: 10px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-container input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* Tu botón Regresar en su posición original */
+        .btn-regresar {
+            position: absolute !important;
+            top: 80px !important; 
+            left: 10px !important;
+            z-index: 2000 !important;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            font-family: sans-serif;
+        }
+        .btn-regresar:hover { background: #f0f0f0; }
+
+        h1.map-title {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            z-index: 1000;
+            margin: 0;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="map-title">Explorador de GDL</h1>
+
+    <div class="search-container">
+        <input type="text" id="pregunta" placeholder="¿A dónde quieres ir en GDL?" style="width: 200px;">
+        <button onclick="buscarConIA()" style="cursor:pointer;">Encontrar</button>
+    </div>
+
+    <a href="/" class="btn-regresar">⬅ Volver al Inicio</a>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // 1. Inicializar mapa
+        var map = L.map('map').setView([20.6597, -103.3496], 13);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        
+        var capaMarcadores = L.layerGroup().addTo(map);
+
+        // Marcador inicial
+        var marcadorBienvenida = L.marker([20.6597, -103.3496]).addTo(map)
+            .bindPopup('¡Bienvenido a Guadalajara!')
+            .openPopup();
+
+        async function buscarConIA() {
+            const texto = document.getElementById('pregunta').value;
+            if (!texto) return;
+
+            capaMarcadores.clearLayers();
+            if(marcadorBienvenida) map.removeLayer(marcadorBienvenida);
+
+            // Filtro para GDL
+            const gdlViewbox = "-103.45,20.75,-103.25,20.55"; 
+            
+            // Aumentamos el límite a 20 para que veas MUCHOS Oxxos o Farmacias
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(texto)}&viewbox=${gdlViewbox}&bounded=1&limit=30`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.length > 0) {
+                    data.forEach(lugar => {
+                        const nombreLugar = lugar.display_name.split(',')[0];
+                        
+                        // Agregamos cada marcador a la capa
+                        L.marker([lugar.lat, lugar.lon])
+                          .addTo(capaMarcadores)
+                          .bindPopup(`<b>${nombreLugar}</b>`);
+                    });
+
+                    // Volamos al primer resultado
+                    map.flyTo([data[0].lat, data[0].lon], 14);
+                } else {
+                    alert("No encontré '" + texto + "' en Guadalajara.");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+        const lugarBuscado = "{{ busqueda_inicial }}";
+        if (lugarBuscado && lugarBuscado !== "" && lugarBuscado !== "None") {
+            document.getElementById('pregunta').value = lugarBuscado;
+            buscarConIA();
+        }
+    </script>
+</body>
+</html>
