@@ -66,8 +66,15 @@
     <h1 class="map-title">Explorador de GDL</h1>
 
     <div class="search-container">
-        <input type="text" id="pregunta" placeholder="¿A dónde quieres ir en GDL?" style="width: 200px;">
-        <button onclick="buscarConIA()" style="cursor:pointer;">Encontrar</button>
+        <label for="producto-select">Producto:</label>
+        <select id="producto-select">
+            <option value="">Todos</option>
+            {% for p in productos %}
+                <option value="{{ p }}" {% if p == selected_producto %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+
+        <a href="/agregar/" class="btn" style="margin-left:8px; padding:8px 10px;">Agregar lugar</a>
     </div>
 
     <a href="/" class="btn-regresar">⬅ Volver al Inicio</a>
@@ -77,63 +84,49 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // 1. Inicializar mapa
+        const lugares = {{ lugares_json|safe }};
+
         var map = L.map('map').setView([20.6597, -103.3496], 13);
 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        
         var capaMarcadores = L.layerGroup().addTo(map);
 
-        // Marcador inicial
-        var marcadorBienvenida = L.marker([20.6597, -103.3496]).addTo(map)
-            .bindPopup('¡Bienvenido a Guadalajara!')
-            .openPopup();
-
-        async function buscarConIA() {
-            const texto = document.getElementById('pregunta').value;
-            if (!texto) return;
-
-            capaMarcadores.clearLayers();
-            if(marcadorBienvenida) map.removeLayer(marcadorBienvenida);
-
-            // Filtro para GDL
-            const gdlViewbox = "-103.45,20.75,-103.25,20.55"; 
-            
-            // Aumentamos el límite a 20 para que veas MUCHOS Oxxos o Farmacias
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(texto)}&viewbox=${gdlViewbox}&bounded=1&limit=30`;
-
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.length > 0) {
-                    data.forEach(lugar => {
-                        const nombreLugar = lugar.display_name.split(',')[0];
-                        
-                        // Agregamos cada marcador a la capa
-                        L.marker([lugar.lat, lugar.lon])
-                          .addTo(capaMarcadores)
-                          .bindPopup(`<b>${nombreLugar}</b>`);
-                    });
-
-                    // Volamos al primer resultado
-                    map.flyTo([data[0].lat, data[0].lon], 14);
-                } else {
-                    alert("No encontré '" + texto + "' en Guadalajara.");
-                }
-            } catch (error) {
-                console.error("Error:", error);
+        function cargarMarcadoresDesdeBD() {
+            if (!Array.isArray(lugares) || lugares.length === 0) {
+                L.marker([20.6597, -103.3496])
+                    .addTo(map)
+                    .bindPopup('No hay lugares guardados todavía.')
+                    .openPopup();
+                return;
             }
+
+            lugares.forEach((lugar) => {
+                const popupContent = `
+                    <b>${lugar.nombre}</b><br>
+                    ${lugar.descripcion || 'Sin descripción'}
+                `;
+
+                L.marker([lugar.latitud, lugar.longitud])
+                    .addTo(capaMarcadores)
+                    .bindPopup(popupContent);
+            });
+
+            map.flyTo([lugares[0].latitud, lugares[0].longitud], 12);
         }
 
-        const lugarBuscado = "{{ busqueda_inicial }}";
-        if (lugarBuscado && lugarBuscado !== "" && lugarBuscado !== "None") {
-            document.getElementById('pregunta').value = lugarBuscado;
-            buscarConIA();
-        }
+        // change product selection -> reload with product filter
+        document.getElementById('producto-select').addEventListener('change', function () {
+            const val = this.value;
+            const params = new URLSearchParams(window.location.search);
+            if (val) params.set('producto', val);
+            else params.delete('producto');
+            window.location.search = params.toString();
+        });
+
+        cargarMarcadoresDesdeBD();
     </script>
 </body>
 </html>

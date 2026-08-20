@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Agregar Lugar</title>
+    <style>
+        body{ font-family: sans-serif; padding: 20px; }
+        form{ max-width: 600px; margin: auto; display:flex; flex-direction:column; gap:10px }
+        input, textarea, select{ padding:8px; font-size:14px }
+        button{ padding:10px 15px; font-weight:bold }
+    </style>
+</head>
+<body>
+    <h1>Agregar un lugar que vende un producto</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label>Nombre</label>
+        <input name="nombre" required />
+
+        <label>Descripción</label>
+        <textarea name="descripcion"></textarea>
+
+        <label>Producto (ej. zapatillas, telefono)</label>
+        <input name="producto" />
+
+        <label>Latitud</label>
+        <input name="latitud" required />
+
+        <label>Longitud</label>
+        <input name="longitud" required />
+
+        <button type="submit">Guardar</button>
+    </form>
+
+    <p><a href="/mapa/">Ver Mapa</a></p>
+</body>
+</html>

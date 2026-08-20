@@ -19,9 +19,10 @@ from django.urls import path
 from SitioWeb import views
 
 urlpatterns = [
-    path('mapa/',views.mapa_view),
+    path('mapa/', views.mapa_db_view, name='mapa'),
+    path('agregar/', views.agregar_lugar, name='agregar'),
     path('hola/', views.index),
     path('admin/', admin.site.urls),
-    path('procesar-busqueda/',views.procesar_busqueda),
-    path('',views.inicio,name='inicio'),
+    path('procesar-busqueda/', views.procesar_busqueda),
+    path('', views.inicio, name='inicio'),
 ]
